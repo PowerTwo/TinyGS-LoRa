@@ -22,12 +22,12 @@ from orbit_predictor.predictors.base import ONE_SECOND
 from orbit_predictor.sources import MemoryTLESource
 
 def CheckNameSat(nameSat):
-    if nameSat == "Tianqi-7" or nameSat == "Tianqi-19" or nameSat == "TIANQI-22" or nameSat == "TIANQI-23" or nameSat == "TIANQI-21" \
-            or nameSat == "TIANQI-24":
+    if nameSat == "Tianqi-7" or nameSat == "Tianqi-19" or nameSat == "Tianqi-22" or nameSat == "Tianqi-23" or nameSat == "Tianqi-21" \
+            or nameSat == "Tianqi-24" or nameSat == "Tianqi-25" or nameSat == "Tianqi-26" or nameSat == "Tianqi-27" or nameSat == "Tianqi-28":
         return 0
     elif nameSat == "Norby-2":
         return 1
-    elif nameSat == "RS52SB" or nameSat == "RS52SD" or nameSat == "RS52SE":
+    elif nameSat == "RS52SD" or nameSat == "RS52SE":
         return 2
     else:
         return 3
@@ -49,7 +49,7 @@ if checkAvailableData:
     first_point_DUR = next(predictTimeParams.get_points())
     # Trích xuất giá trị của trường "AOS"
     checkAvailableAOS = first_point_AOS['AOS']
-    checkAvailableDUR = first_point_DUR['DUR']/2
+    checkAvailableDUR = first_point_DUR['DUR']-30
 else:
     print("Không có dữ liệu trong InfluxDB.")
     checkAvailableAOS = 0
@@ -64,7 +64,8 @@ if (checkAvailableAOS + checkAvailableDUR) < dt.datetime.now().timestamp():
     HCM = Location(
         "HCM", latitude_deg=10.869, longitude_deg=106.803, elevation_m=10)
 
-    satellites_getTLE = ['Tianqi-7','Tianqi-19','TIANQI-22','TIANQI-23','TIANQI-21','TIANQI-24','Norbi','Norby-2']
+    satellites_getTLE = ['Tianqi-7','Tianqi-19','Tianqi-22','Tianqi-23','Tianqi-21','Tianqi-24','Norbi','Norby-2',
+                         'Tianqi-25','Tianqi-26','Tianqi-27','Tianqi-28']
 
     # URL của tệp tin dữ liệu
     url = "https://api.tinygs.com/v1/tinygs_supported.txt"
@@ -112,7 +113,9 @@ if (checkAvailableAOS + checkAvailableDUR) < dt.datetime.now().timestamp():
                 'AOS UnixTime': int(pass_.aos.timestamp())+25200,
                 'DUR': int(pass_.duration_s),
                 'Max Elevation': int(pass_.max_elevation_deg),
-                'TypeSat': CheckNameSat(pass_.sate_id)
+                'TypeSat': CheckNameSat(pass_.sate_id),
+                'TLE line1': tle_line1[position],
+                'TLE line2': tle_line2[position]
             })
             for i in range(4):
                 pass_ = predictor.get_next_pass(HCM, pass_.los, max_elevation_gt=10)
@@ -123,7 +126,9 @@ if (checkAvailableAOS + checkAvailableDUR) < dt.datetime.now().timestamp():
                     'AOS UnixTime': int(pass_.aos.timestamp())+25200,
                     'DUR': int(pass_.duration_s),
                     'Max Elevation': int(pass_.max_elevation_deg),
-                    'TypeSat': CheckNameSat(pass_.sate_id)
+                    'TypeSat': CheckNameSat(pass_.sate_id),
+                    'TLE line1': tle_line1[position],
+                    'TLE line2': tle_line2[position]
                 })
 
     # Tạo DataFrame từ danh sách dữ liệu
@@ -141,6 +146,8 @@ if (checkAvailableAOS + checkAvailableDUR) < dt.datetime.now().timestamp():
         aos = df_sorted.loc[i,"AOS UnixTime"]
         dur = df_sorted.loc[i,"DUR"]
         typeSat = df_sorted.loc[i,"TypeSat"]
+        tle_line1 = df_sorted.loc[i, "TLE line1"]
+        tle_line2 = df_sorted.loc[i, "TLE line2"]
         json_body = [
             {
                 "measurement": "predictTime",
@@ -151,7 +158,9 @@ if (checkAvailableAOS + checkAvailableDUR) < dt.datetime.now().timestamp():
                 "fields": {
                     "AOS": aos,
                     "DUR": dur,
-                    "TypeSat": typeSat
+                    "TypeSat": typeSat,
+                    "TLEline1": tle_line1,
+                    "TLEline2": tle_line2
                 }
             }
         ]
@@ -160,3 +169,4 @@ if (checkAvailableAOS + checkAvailableDUR) < dt.datetime.now().timestamp():
 
     result = client.query('select * from predictTime')
     print(result)
+    
