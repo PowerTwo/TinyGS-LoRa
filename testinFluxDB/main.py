@@ -49,7 +49,7 @@ if checkAvailableData:
     first_point_DUR = next(predictTimeParams.get_points())
     # Trích xuất giá trị của trường "AOS"
     checkAvailableAOS = first_point_AOS['AOS']
-    checkAvailableDUR = first_point_DUR['DUR']-30
+    checkAvailableDUR = first_point_DUR['DUR']-60
 else:
     print("Không có dữ liệu trong InfluxDB.")
     checkAvailableAOS = 0
